@@ -7,26 +7,46 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <!-- Include Plotly.js -->
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+    </style>
 </head>
 <body>
     <h1>Chart from Dataset Example</h1>
+    <div class="container">
+        <div>
     <label for="z_multiselect">Select countries:</label>
     <select id="z_multiselect" name="countries" multiple>
         {% for value in countries %}
             <option value="{{ value }}">{{ value }}</option>
         {% endfor %}
     </select>
+</div>
+    <div>
+        <label for="na_item_multiselect">Select NA Items:</label>
+        <select id="na_item_multiselect" name="na_items" multiple>
+            {% for item in na_items %}
+                <option value="{{ item }}">{{ item }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
     <!-- Container for the Plotly chart -->
     <div id="plot"></div>
     
     <script>
         // Function to update the graph based on the selected Z values
-        function updateGraph(countries) {
+        function updateGraph(countries,na_items) {
             // Send an AJAX request to update_graph route with selected Z values
             $.ajax({
                 type: 'POST',
                 url: '/update_graph',
-                data: {'countries': countries},
+                data: {'countries': countries, 'na_items': na_items},
                 success: function(response) {
                     // Parse the graph JSON data and update the Plotly chart
                     var graphJSON = response.graphJSON;
@@ -35,12 +55,19 @@
             });
         }
 
-        // Attach an event listener to the multiselect list
+        // Attach an event listener to the multiselect lists
         document.getElementById('z_multiselect').addEventListener('change', function() {
-            var selectedZ = Array.from(this.selectedOptions).map(option => option.value);
-            updateGraph(selectedZ);
+            var selectedCountries = Array.from(this.selectedOptions).map(option => option.value);
+            var selectedNAItems = Array.from(document.getElementById('na_item_multiselect').selectedOptions).map(option => option.value);
+            updateGraph(selectedCountries, selectedNAItems);
         });
 
+        document.getElementById('na_item_multiselect').addEventListener('change', function() {
+            var selectedCountries = Array.from(document.getElementById('z_multiselect').selectedOptions).map(option => option.value);
+            var selectedNAItems = Array.from(this.selectedOptions).map(option => option.value);
+            updateGraph(selectedCountries, selectedNAItems);
+        });
+        
         // Initialize the graph with default data when the page loads
         $(document).ready(function() {
             updateGraph(["{{ default_country }}"]);  // Pass the default Z value as an array
