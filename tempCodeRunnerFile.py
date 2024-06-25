@@ -1,0 +1,1 @@
+countries = request.form.getlist('countries')

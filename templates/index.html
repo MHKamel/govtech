@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Flask Plotly Example</title>
+    <!-- Include jQuery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <!-- Include Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <h1>Chart from Dataset Example</h1>
+    <label for="z_multiselect">Select countries:</label>
+    <select id="z_multiselect" name="countries" multiple>
+        {% for value in countries %}
+            <option value="{{ value }}">{{ value }}</option>
+        {% endfor %}
+    </select>
+    <!-- Container for the Plotly chart -->
+    <div id="plot"></div>
+    
+    <script>
+        // Function to update the graph based on the selected Z values
+        function updateGraph(countries) {
+            // Send an AJAX request to update_graph route with selected Z values
+            $.ajax({
+                type: 'POST',
+                url: '/update_graph',
+                data: {'countries': countries},
+                success: function(response) {
+                    // Parse the graph JSON data and update the Plotly chart
+                    var graphJSON = response.graphJSON;
+                    Plotly.react('plot', JSON.parse(graphJSON), {});
+                }
+            });
+        }
+
+        // Attach an event listener to the multiselect list
+        document.getElementById('z_multiselect').addEventListener('change', function() {
+            var selectedZ = Array.from(this.selectedOptions).map(option => option.value);
+            updateGraph(selectedZ);
+        });
+
+        // Initialize the graph with default data when the page loads
+        $(document).ready(function() {
+            updateGraph(["{{ default_country }}"]);  // Pass the default Z value as an array
+        });
+    </script>
+</body>
+</html>
