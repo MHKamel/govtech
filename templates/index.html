@@ -8,45 +8,42 @@
     <!-- Include Plotly.js -->
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
-        .container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
+        .country-button {
+            display: inline-block;
+            margin: 5px;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            cursor: pointer;
+        }
+        .country-button.active {
+            background-color: #3498db;
+            color: #fff;
         }
     </style>
 </head>
 <body>
     <h1>Chart from Dataset Example</h1>
     <div class="container">
-        <div>
-    <label for="z_multiselect">Select countries:</label>
-    <select id="z_multiselect" name="countries" multiple>
-        {% for value in countries %}
-            <option value="{{ value }}">{{ value }}</option>
-        {% endfor %}
-    </select>
-</div>
-    <div>
-        <label for="na_item_multiselect">Select NA Items:</label>
-        <select id="na_item_multiselect" name="na_items" multiple>
-            {% for item in na_items %}
-                <option value="{{ item }}">{{ item }}</option>
+        <!-- Container for country buttons -->
+        <div id="country-buttons">
+            {% for value in countries %}
+                <div class="country-button" data-country="{{ value }}">{{ value }}</div>
             {% endfor %}
-        </select>
+        </div>
     </div>
-</div>
+
     <!-- Container for the Plotly chart -->
     <div id="plot"></div>
     
     <script>
-        // Function to update the graph based on the selected Z values
-        function updateGraph(countries,na_items) {
-            // Send an AJAX request to update_graph route with selected Z values
+        // Function to update the graph based on the selected country and NA items
+        function updateGraph(country, na_items) {
+            // Send an AJAX request to update_graph route with selected country and NA items
             $.ajax({
                 type: 'POST',
                 url: '/update_graph',
-                data: {'countries': countries, 'na_items': na_items},
+                data: {'country': country, 'na_items': na_items},
                 success: function(response) {
                     // Parse the graph JSON data and update the Plotly chart
                     var graphJSON = response.graphJSON;
@@ -55,22 +52,30 @@
             });
         }
 
-        // Attach an event listener to the multiselect lists
-        document.getElementById('z_multiselect').addEventListener('change', function() {
-            var selectedCountries = Array.from(this.selectedOptions).map(option => option.value);
-            var selectedNAItems = Array.from(document.getElementById('na_item_multiselect').selectedOptions).map(option => option.value);
-            updateGraph(selectedCountries, selectedNAItems);
+        // Function to highlight the active country button
+        function setActiveButton(country) {
+            $('.country-button').removeClass('active');
+            $('.country-button[data-country="' + country + '"]').addClass('active');
+        }
+
+        // Attach click event listener to country buttons
+        $('#country-buttons').on('click', '.country-button', function() {
+            var selectedCountry = $(this).data('country');
+            var na_items = JSON.parse('{{ na_items | tojson | safe }}');  // Parse NA items from Flask
+
+            // Update the graph with selected country and NA items
+            updateGraph(selectedCountry, na_items);
+            setActiveButton(selectedCountry);
         });
 
-        document.getElementById('na_item_multiselect').addEventListener('change', function() {
-            var selectedCountries = Array.from(document.getElementById('z_multiselect').selectedOptions).map(option => option.value);
-            var selectedNAItems = Array.from(this.selectedOptions).map(option => option.value);
-            updateGraph(selectedCountries, selectedNAItems);
-        });
-        
         // Initialize the graph with default data when the page loads
         $(document).ready(function() {
-            updateGraph(["{{ default_country }}"]);  // Pass the default Z value as an array
+            var na_items = JSON.parse('{{ na_items | tojson | safe }}');  // Parse NA items from Flask
+            var defaultCountry = '{{ default_country }}';  // Get default country from Flask
+
+            // Update the graph with default country and NA items
+            updateGraph(defaultCountry, na_items);
+            setActiveButton(defaultCountry);
         });
     </script>
 </body>
