@@ -71,5 +71,48 @@ def update_graph():
     # Return the JSON data to update the graph
     return jsonify(graphJSON=graphJSON)
 
+@app.route('/year_filter')
+def year_filter():
+    years = sorted(df['TIME_PERIOD'].unique().tolist(), reverse=True)  # Convert to Python list
+    na_items = df['na_item_group'].unique().tolist()  # Convert to Python list
+    return render_template('year_filter.html', years=years, na_items=na_items)
+ 
+@app.route('/update_year_graph', methods=['POST'])
+def update_year_graph():
+    # Get the selected year and na_item from the AJAX request
+    selected_year = int(request.form.get('year'))  # Convert to integer
+    na_items_selected = request.form.getlist('na_items[]')
+ 
+    # Filter the dataset based on the selected year, na_items_group, and unit
+    df_filtered = df[(df['TIME_PERIOD'] == selected_year) &
+                     (df['na_item'].isin(['P6', 'P7']))]
+ 
+    data = []
+    for na_item in na_items_selected:
+        df_subset = df_filtered[df_filtered['na_item_group'] == na_item]
+        trace = go.Bar(
+            x=df_subset['geo'],
+            y=df_subset['OBS_VALUE'],
+            name=na_item
+        )
+        data.append(trace)
+ 
+    # Create a Plotly layout
+    layout = go.Layout(
+        title=f'Chart for {selected_year}',
+        xaxis=dict(title='Countries'),
+        yaxis=dict(title='OBS_VALUE'),
+        barmode='group'
+    )
+ 
+    # Create a Plotly figure
+    fig = go.Figure(data=data, layout=layout)
+ 
+    # Convert the Plotly figure to JSON using Plotly's encoder
+    graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+ 
+    # Return the JSON data to update the graph
+    return jsonify(graphJSON=graphJSON)
+
 if __name__ == '__main__':
     app.run(debug=True)

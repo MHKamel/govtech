@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Year Filtered Graph</title>
+    <!-- Include jQuery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <!-- Include Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        .year-button {
+            display: inline-block;
+            margin: 5px;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            cursor: pointer;
+        }
+        .year-button.active {
+            background-color: #3498db;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <h1>Year Filtered Graph</h1>
+
+    <!-- Container for the Plotly chart -->
+    <div id="plot"></div>
+
+    <!-- Container for year buttons -->
+    <div id="year-buttons">
+        {% for year in years %}
+            <div class="year-button" data-year="{{ year }}">{{ year }}</div>
+        {% endfor %}
+    </div>
+
+    <script>
+        // Initialize Plotly chart with buttons
+        $(document).ready(function() {
+            var years = JSON.parse('{{ years | tojson | safe }}');
+            var na_items = JSON.parse('{{ na_items | tojson | safe }}');
+            
+            // Initialize Plotly chart
+            Plotly.newPlot('plot', [], {
+                title: 'Year Filtered Graph',
+                xaxis: {
+                    title: 'Countries'
+                },
+                yaxis: {
+                    title: 'OBS_VALUE'
+                }
+            });
+
+            // Function to update the graph based on selected year and NA items
+            function updateGraph(selectedYear, na_items) {
+                // Send an AJAX request to update_year_graph route with selected year and NA items
+                $.ajax({
+                    type: 'POST',
+                    url: '/update_year_graph',
+                    data: {'year': selectedYear, 'na_items': na_items},
+                    success: function(response) {
+                        // Parse the graph JSON data and update the Plotly chart
+                        var graphJSON = response.graphJSON;
+                        Plotly.react('plot', JSON.parse(graphJSON), {});
+                    }
+                });
+            }
+
+            // Function to highlight the active year button
+            function setActiveButton(year) {
+                $('.year-button').removeClass('active');
+                $('.year-button[data-year="' + year + '"]').addClass('active');
+            }
+
+            // Attach click event listener to year buttons
+            $('#year-buttons').on('click', '.year-button', function() {
+                var selectedYear = $(this).data('year');
+                setActiveButton(selectedYear);
+                updateGraph(selectedYear, na_items);
+            });
+
+            // Initialize the Plotly chart with default data when the page loads
+            updateGraph(years[0], na_items);
+            setActiveButton(years[0]);
+        });
+    </script>
+</body>
+</html>
