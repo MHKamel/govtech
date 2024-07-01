@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pie Charts</title>
+    <!-- Include Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <!-- Include Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <!-- Include jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Include custom styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center">Pie Charts for Export and Import</h1>
+        
+        <div class="form-row align-items-center">
+            <div class="col-auto">
+                <label for="year-select" class="col-form-label">Select Year:</label>
+            </div>
+            <div class="col-auto">
+                <select id="year-select" class="form-control">
+                    {% for year in years %}
+                        <option value="{{ year }}">{{ year }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <label for="country-select" class="col-form-label">Select Country:</label>
+            </div>
+            <div class="col-auto">
+                <select id="country-select" class="form-control">
+                    {% for country in countries %}
+                        <option value="{{ country }}">{{ country }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <button id="update-charts-btn" class="btn btn-primary">Update Charts</button>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div id="pie-chart-export"></div>
+            </div>
+            <div class="col-md-6">
+                <div id="pie-chart-import"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function updateCharts() {
+            var selectedYear = $('#year-select').val();
+            var selectedCountry = $('#country-select').val();
+
+            $.ajax({
+                type: 'POST',
+                url: '/update_pie_charts',
+                data: {
+                    year: selectedYear,
+                    country: selectedCountry
+                },
+                success: function(response) {
+                    var pieTraces = response.pieTracesJSON;
+
+                    var exportLabels = [];
+                    var exportValues = [];
+                    var importLabels = [];
+                    var importValues = [];
+
+                    for (var i = 0; i < pieTraces.length; i++) {
+                        var trace = pieTraces[i];
+                        if (trace.name.includes('Export')) {
+                            exportLabels.push(trace.labels[0]);
+                            exportValues.push(trace.values[0]);
+                        } else if (trace.name.includes('Import')) {
+                            importLabels.push(trace.labels[0]);
+                            importValues.push(trace.values[0]);
+                        }
+                    }
+
+                    var exportData = [{
+                        labels: exportLabels,
+                        values: exportValues,
+                        type: 'pie',
+                        name: 'Export'
+                    }];
+
+                    var importData = [{
+                        labels: importLabels,
+                        values: importValues,
+                        type: 'pie',
+                        name: 'Import'
+                    }];
+
+                    Plotly.newPlot('pie-chart-export', exportData, {title: 'Export'});
+                    Plotly.newPlot('pie-chart-import', importData, {title: 'Import'});
+                },
+                error: function(error) {
+                    console.error('Error fetching data:', error);
+                }
+            });
+        }
+
+        $(document).ready(function() {
+            updateCharts();
+
+            $('#update-charts-btn').click(function() {
+                updateCharts();
+            });
+        });
+    </script>
+</body>
+</html>
