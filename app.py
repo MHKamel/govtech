@@ -9,11 +9,12 @@ app = Flask(__name__)
 # Load the dataset
 df = pd.read_csv('estat_nama_10_exi_en.csv')
 df = df[df['unit'] == 'CP_MEUR']  # always filter the data by the current millions EUR price
+df = df[df['TIME_PERIOD'] >=2008]
 
 # Filter the dataset to only include 'P6' and 'P7' items
 df = df[df['na_item'].isin(['P6', 'P7'])]
 
-# Define the mapping function
+# map P6 to Export and P7 to import
 def map_na_item(na_item):
     if na_item == 'P6':
         return 'Export'
@@ -26,7 +27,7 @@ def map_na_item(na_item):
 df['na_item_group'] = df['na_item'].apply(map_na_item)
 
 # Extract unique values of Z column
-default_country = df['geo'].iloc[0]
+default_country = "DE"
 
 @app.route('/')
 def index():
@@ -57,9 +58,37 @@ def update_graph():
         )
         data.append(trace)
 
+    # Calculate the changes for the table
+    table_data = []
+    years = sorted(df_filtered['TIME_PERIOD'].unique())
+
+    for i in range(1, len(years)):
+        prev_year = years[i-1]
+        curr_year = years[i]
+        prev_data = df_filtered[df_filtered['TIME_PERIOD'] == prev_year]
+        curr_data = df_filtered[df_filtered['TIME_PERIOD'] == curr_year]
+        
+        prev_export = prev_data[prev_data['na_item'] == 'P6']['OBS_VALUE'].sum()
+        curr_export = curr_data[curr_data['na_item'] == 'P6']['OBS_VALUE'].sum()
+        export_change = curr_export - prev_export
+        export_percent_change = ((curr_export - prev_export) / prev_export * 100) if prev_export != 0 else 0
+        
+        prev_import = prev_data[prev_data['na_item'] == 'P7']['OBS_VALUE'].sum()
+        curr_import = curr_data[curr_data['na_item'] == 'P7']['OBS_VALUE'].sum()
+        import_change = curr_import - prev_import
+        import_percent_change = ((curr_import - prev_import) / prev_import * 100) if prev_import != 0 else 0
+        
+        table_data.append({
+            'year': int(curr_year), 
+            'exportChange': export_change, 
+            'exportPercentChange': export_percent_change, 
+            'importChange': import_change, 
+            'importPercentChange': import_percent_change
+        })
+
     # Create a Plotly layout
     layout = go.Layout(
-        title='Chart from Dataset',
+        title=f'Chart from {country}',
         xaxis=dict(title='TIME_PERIOD'),
         yaxis=dict(title='OBS_VALUE'),
         barmode='group'
@@ -70,9 +99,13 @@ def update_graph():
 
     # Convert the Plotly figure to JSON
     graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    
+    # Return the JSON data to update the graph and the table
+    return jsonify(graphJSON=graphJSON, tableData=table_data)
 
-    # Return the JSON data to update the graph
-    return jsonify(graphJSON=graphJSON)
+
+
+
 
 
 @app.route('/year_filter')

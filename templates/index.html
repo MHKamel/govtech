@@ -3,39 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <title>Flask Plotly Example</title>
+    <!-- Include Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Include custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <!-- Include jQuery -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <!-- Include Plotly.js -->
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <style>
-        .country-button {
-            display: inline-block;
-            margin: 5px;
-            padding: 10px;
-            background-color: #f0f0f0;
-            border: 1px solid #ccc;
-            cursor: pointer;
-        }
-        .country-button.active {
-            background-color: #3498db;
-            color: #fff;
-        }
-    </style>
 </head>
 <body>
-    <h1>Chart from Dataset Example</h1>
     <div class="container">
-        <!-- Container for country buttons -->
-        <div id="country-buttons">
-            {% for value in countries %}
-                <div class="country-button" data-country="{{ value }}">{{ value }}</div>
-            {% endfor %}
+        <h1 class="mt-5 text-center">Import and Export progress over time</h1>
+        <br/>
+        <div class="mb-4">
+            <!-- Container for country buttons -->
+            <div class="btn-group btn-group-toggle btn-group-lg d-flex flex-wrap" role="group" data-toggle="buttons">
+                {% for value in countries %}
+                    <label class="btn btn-secondary custom-button" data-country="{{ value }}">
+                        <input type="radio" name="country" id="country-{{ loop.index }}" autocomplete="off"> {{ value }}
+                    </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Container for the Plotly chart -->
+        <div class="mb-4" id="plot"></div>
+        <h1 class="mt-5 text-center">Import and Export progress comparison</h1>
+        <br/>
+        <!-- Container for the table -->
+        <div class="table-responsive">
+            <div id="table-container"></div>
         </div>
     </div>
 
-    <!-- Container for the Plotly chart -->
-    <div id="plot"></div>
-    
     <script>
         // Function to update the graph based on the selected country and NA items
         function updateGraph(country, na_items) {
@@ -48,32 +49,64 @@
                     // Parse the graph JSON data and update the Plotly chart
                     var graphJSON = response.graphJSON;
                     Plotly.react('plot', JSON.parse(graphJSON), {});
+
+                    // Update the table with the new data
+                    updateTable(response.tableData);
                 }
             });
         }
 
+        // Function to update the table
+        function updateTable(tableData) {
+            var tableHTML = '<table class="table table-striped table-bordered"><thead class="thead-dark"><tr><th>Year</th><th>Export Change</th><th>Export Change (%)</th><th>Import Change</th><th>Import Change (%)</th></tr></thead><tbody>';
+            for (var i = 0; i < tableData.length; i++) {
+                var exportChange = tableData[i].exportChange.toFixed(2);
+                var exportPercentChange = tableData[i].exportPercentChange.toFixed(2);
+                var importChange = tableData[i].importChange.toFixed(2);
+                var importPercentChange = tableData[i].importPercentChange.toFixed(2);
+                
+                var exportChangeClass = exportChange >= 0 ? 'positive' : 'negative';
+                var importChangeClass = importChange >= 0 ? 'positive' : 'negative';
+                
+                var exportTriangle = exportChange >= 0 ? '<div class="triangle-up"></div>' : '<div class="triangle-down"></div>';
+                var importTriangle = importChange >= 0 ? '<div class="triangle-up"></div>' : '<div class="triangle-down"></div>';
+
+                tableHTML += `<tr>
+                    <td>${tableData[i].year}</td>
+                    <td class="${exportChangeClass}">${exportChange} ${exportTriangle}</td>
+                    <td class="${exportChangeClass}">${exportPercentChange}% ${exportTriangle}</td>
+                    <td class="${importChangeClass}">${importChange} ${importTriangle}</td>
+                    <td class="${importChangeClass}">${importPercentChange}% ${importTriangle}</td>
+                </tr>`;
+            }
+            tableHTML += '</tbody></table>';
+            $('#table-container').html(tableHTML);
+        }
+
         // Function to highlight the active country button
         function setActiveButton(country) {
-            $('.country-button').removeClass('active');
-            $('.country-button[data-country="' + country + '"]').addClass('active');
+            $('.custom-button').removeClass('active');
+            $('.custom-button[data-country="' + country + '"]').addClass('active');
         }
 
         // Attach click event listener to country buttons
-        $('#country-buttons').on('click', '.country-button', function() {
-            var selectedCountry = $(this).data('country');
-            var na_items = JSON.parse('{{ na_items | tojson | safe }}');  // Parse NA items from Flask
-
-            // Update the graph with selected country and NA items
-            updateGraph(selectedCountry, na_items);
-            setActiveButton(selectedCountry);
-        });
-
-        // Initialize the graph with default data when the page loads
         $(document).ready(function() {
             var na_items = JSON.parse('{{ na_items | tojson | safe }}');  // Parse NA items from Flask
             var defaultCountry = '{{ default_country }}';  // Get default country from Flask
 
-            // Update the graph with default country and NA items
+            // Function to handle country button clicks
+            $('.custom-button').click(function() {
+                var selectedCountry = $(this).data('country');
+
+                // Check if already active to prevent duplicate AJAX calls
+                if (!$(this).hasClass('active')) {
+                    // Update the graph with selected country and NA items
+                    updateGraph(selectedCountry, na_items);
+                    setActiveButton(selectedCountry);
+                }
+            });
+
+            // Initialize the graph with default data when the page loads
             updateGraph(defaultCountry, na_items);
             setActiveButton(defaultCountry);
         });
