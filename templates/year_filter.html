@@ -3,44 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <title>Year Filtered Graph</title>
+    <!-- Include Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <!-- Include jQuery -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <!-- Include Plotly.js -->
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <style>
-        .year-button {
-            display: inline-block;
-            margin: 5px;
-            padding: 10px;
-            background-color: #f0f0f0;
-            border: 1px solid #ccc;
-            cursor: pointer;
-        }
-        .year-button.active {
-            background-color: #3498db;
-            color: #fff;
-        }
-    </style>
+    <!-- Link to styles.css for custom styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-    <h1>Year Filtered Graph</h1>
+    <div class="container">
+        <h1 class="mt-5 text-center">Import and Export comparison between EU countries</h1>
+        <br/>
+        <!-- Container for year buttons (using radio buttons) -->
+        <div id="year-buttons" class="btn-group btn-group-toggle btn-group-lg d-flex flex-wrap" role="group" data-toggle="buttons">
+            {% for year in years %}
+                <label class="btn btn-secondary custom-button year-button">
+                    <input type="radio" name="year" id="year-{{ year }}" autocomplete="off" data-year="{{ year }}"> {{ year }}
+                </label>
+            {% endfor %}
+        </div>
 
-    <!-- Container for the Plotly chart -->
-    <div id="plot"></div>
-
-    <!-- Container for year buttons -->
-    <div id="year-buttons">
-        {% for year in years %}
-            <div class="year-button" data-year="{{ year }}">{{ year }}</div>
-        {% endfor %}
+        <!-- Container for the Plotly chart -->
+        <div id="plot" class="mb-4"></div>
     </div>
 
     <script>
-        // Initialize Plotly chart with buttons
         $(document).ready(function() {
             var years = JSON.parse('{{ years | tojson | safe }}');
             var na_items = JSON.parse('{{ na_items | tojson | safe }}');
-            
+            var currentYear = years[0]; // Default to the first year
+
             // Initialize Plotly chart
             Plotly.newPlot('plot', [], {
                 title: 'Year Filtered Graph',
@@ -54,35 +48,42 @@
 
             // Function to update the graph based on selected year and NA items
             function updateGraph(selectedYear, na_items) {
-                // Send an AJAX request to update_year_graph route with selected year and NA items
                 $.ajax({
                     type: 'POST',
                     url: '/update_year_graph',
                     data: {'year': selectedYear, 'na_items': na_items},
                     success: function(response) {
-                        // Parse the graph JSON data and update the Plotly chart
                         var graphJSON = response.graphJSON;
                         Plotly.react('plot', JSON.parse(graphJSON), {});
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error:', error);
                     }
                 });
             }
 
-            // Function to highlight the active year button
-            function setActiveButton(year) {
-                $('.year-button').removeClass('active');
-                $('.year-button[data-year="' + year + '"]').addClass('active');
-            }
+            // Function to handle click on year buttons
+            $('.year-button').click(function() {
+                var selectedYear = $(this).find('input').data('year');
 
-            // Attach click event listener to year buttons
-            $('#year-buttons').on('click', '.year-button', function() {
-                var selectedYear = $(this).data('year');
-                setActiveButton(selectedYear);
-                updateGraph(selectedYear, na_items);
+                // Check if already active to prevent unnecessary AJAX calls
+                if (selectedYear !== currentYear) {
+                    updateGraph(selectedYear, na_items);
+                    currentYear = selectedYear; // Update current year
+
+                    // Remove active class from all buttons
+                    $('.year-button').removeClass('active');
+
+                    // Add active class to the clicked button
+                    $(this).addClass('active');
+                }
             });
 
             // Initialize the Plotly chart with default data when the page loads
-            updateGraph(years[0], na_items);
-            setActiveButton(years[0]);
+            updateGraph(currentYear, na_items);
+
+            // Add active class to default year button
+            $('#year-' + currentYear).parent().addClass('active');
         });
     </script>
 </body>
