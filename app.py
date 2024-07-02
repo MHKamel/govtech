@@ -46,12 +46,28 @@ default_country = "DE"
 # Load dataset
 df = load_data()
 
-# Routes
+
+
 @app.route('/')
+def year_filter():
+    years = sorted(df['TIME_PERIOD'].unique().tolist(), reverse=True)
+    na_items = ['Export', 'Import']
+    return render_template('bar_chart.html', years=years, na_items=na_items)
+
+@app.route('/update_year_graph', methods=['POST'])
+def update_year_graph():
+    selected_year = int(request.form.get('year'))
+    na_items_selected = request.form.getlist('na_items[]')
+    df_filtered = df[(df['TIME_PERIOD'] == selected_year) & (df['na_item'].isin(['P6', 'P7']))]
+    graphJSON = create_chart(df_filtered, na_items_selected, f'Chart for {selected_year}', 'geo', 'OBS_VALUE', 'group')
+    return jsonify(graphJSON=graphJSON)
+
+# Routes
+@app.route('/country')
 def index():
     countries = df['geo'].unique()
     na_items = ['Export', 'Import']
-    return render_template('index.html', countries=countries, na_items=na_items, default_country=default_country)
+    return render_template('line_chart.html', countries=countries, na_items=na_items, default_country=default_country)
 
 @app.route('/update_graph', methods=['POST'])
 def update_graph():
@@ -61,20 +77,6 @@ def update_graph():
     graphJSON = create_chart(df_filtered, na_items_selected, f'Chart from {country}', 'TIME_PERIOD', 'OBS_VALUE', 'lines+markers')
     table_data = calculate_import_export(df_filtered)
     return jsonify(graphJSON=graphJSON, tableData=table_data)
-
-@app.route('/year_filter')
-def year_filter():
-    years = sorted(df['TIME_PERIOD'].unique().tolist(), reverse=True)
-    na_items = ['Export', 'Import']
-    return render_template('year_filter.html', years=years, na_items=na_items)
-
-@app.route('/update_year_graph', methods=['POST'])
-def update_year_graph():
-    selected_year = int(request.form.get('year'))
-    na_items_selected = request.form.getlist('na_items[]')
-    df_filtered = df[(df['TIME_PERIOD'] == selected_year) & (df['na_item'].isin(['P6', 'P7']))]
-    graphJSON = create_chart(df_filtered, na_items_selected, f'Chart for {selected_year}', 'geo', 'OBS_VALUE', 'group')
-    return jsonify(graphJSON=graphJSON)
 
 # Calculate Import/Export difference across years
 def calculate_import_export(df):
@@ -140,7 +142,7 @@ def create_chart(df, na_items_selected, title, x_title, y_title, mode):
     
     return graphJSON
 
-@app.route('/pie_charts')
+@app.route('/country_detailed')
 def eu_countries_data():
     countries = df['geo'].unique().tolist()
     years = sorted(df['TIME_PERIOD'].unique().tolist(), reverse=True)
