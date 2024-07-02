@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Country Totals</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <!-- Include Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <!-- Include Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <!-- Include jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Include custom styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center">Pie Charts for Total Exports and Imports</h1>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <label for="country-select">Select Country:</label>
+                <select id="country-select" class="form-control">
+                    {% for country in countries %}
+                        <option value="{{ country }}">{{ country }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        
+        <div class="row mt-3">
+            <div class="col-md-12 text-center">
+                <button id="update-charts-btn" class="btn btn-primary">Update Charts</button>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div id="pie-chart-combined-export"></div>
+            </div>
+            <div class="col-md-6">
+                <div id="pie-chart-combined-import"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function updateCharts() {
+            var selectedCountry = $('#country-select').val();
+            $.ajax({
+                type: 'POST',
+                url: '/update_combined_pie_charts',
+                data: JSON.stringify({
+                    country: selectedCountry
+                }),
+                contentType: 'application/json',
+                success: function(response) {
+                    var combinedPieTraces = JSON.parse(response.combinedPieTracesJSON);
+
+                    var exportData = [{
+                        labels: combinedPieTraces[0].labels,
+                        values: combinedPieTraces[0].values,
+                        type: 'pie',
+                        name: 'Combined Export'
+                    }];
+                    var importData = [{
+                        labels: combinedPieTraces[1].labels,
+                        values: combinedPieTraces[1].values,
+                        type: 'pie',
+                        name: 'Combined Import'
+                    }];
+
+                    Plotly.newPlot('pie-chart-combined-export', exportData, {title: 'Combined Export'});
+                    Plotly.newPlot('pie-chart-combined-import', importData, {title: 'Combined Import'});
+                },
+                error: function(error) {
+                    console.error('Error fetching combined data:', error);
+                }
+            });
+        }
+
+        $(document).ready(function() {
+            updateCharts();
+
+            $('#update-charts-btn').click(function() {
+                updateCharts();
+            });
+        });
+    </script>
+</body>
+</html>

@@ -177,7 +177,46 @@ def update_pie_charts():
     
     return jsonify(pieTracesJSON=pie_traces)
 
+@app.route('/country_combined')
+def country_combined():
+    countries = df['geo'].unique().tolist()
+    return render_template('combined_pie_charts.html', countries=countries, default_country=default_country)
 
+@app.route('/update_combined_pie_charts', methods=['POST'])
+def update_combined_pie_charts():
+    selected_country = request.json.get('country')
+    
+    # Filter the dataset for the selected country, and excluding 'P6' and 'P7'
+    df_filtered = df[(df['geo'] == selected_country) & (~df['na_item'].isin(['P6', 'P7', 'P6_S21', 'P7_S21']))]
+
+    # Group by na_item and sum OBS_VALUE
+    data = df_filtered.groupby('na_item')['OBS_VALUE'].sum().reset_index()
+    
+    # Map na_item to readable categories
+    data['na_item_group'] = data['na_item'].apply(map_na_item)
+    
+    # Separate export and import data
+    export_data = data[data['na_item_group'].str.contains('Export')]
+    import_data = data[data['na_item_group'].str.contains('Import')]
+    
+    # Create Pie chart traces for export and import categories
+    export_trace = {
+        'labels': export_data['na_item_group'].tolist(),
+        'values': export_data['OBS_VALUE'].tolist(),
+        'type': 'pie',
+        'name': 'Export'
+    }
+    
+    import_trace = {
+        'labels': import_data['na_item_group'].tolist(),
+        'values': import_data['OBS_VALUE'].tolist(),
+        'type': 'pie',
+        'name': 'Import'
+    }
+    
+    combined_pie_traces_json = json.dumps([export_trace, import_trace], cls=plotly.utils.PlotlyJSONEncoder)
+    
+    return jsonify(combinedPieTracesJSON=combined_pie_traces_json)
 
 
 if __name__ == '__main__':
