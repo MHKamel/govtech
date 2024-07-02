@@ -15,8 +15,14 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
+    <nav id="top-links" class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            {% include 'navbar.html' %}
+        </div>
+    </nav>
     <div class="container">
         <h1 class="text-center">Detailed country data for Export and Import</h1>
+        <br/>
         
         <div class="form-row align-items-center">
             <div class="col-auto">
@@ -46,13 +52,19 @@
         
         <div class="row mt-4">
             <div class="col-md-6">
-                <div id="pie-chart-export"></div>
+                <div id="pie-chart-export" class="chart-container"></div>
             </div>
             <div class="col-md-6">
-                <div id="pie-chart-import"></div>
+                <div id="pie-chart-import" class="chart-container"></div>
             </div>
         </div>
     </div>
+
+    <footer id="bottom-links" class="footer mt-auto py-3 bg-dark">
+        <div class="container text-center">
+            <a class="navbar-brand" href="#"><img src="{{ url_for('static', filename='favicon.png') }}" width="50" height="50"></a>
+        </div>
+    </footer>
 
     <script>
         function updateCharts() {

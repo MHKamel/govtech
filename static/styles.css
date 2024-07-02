@@ -98,3 +98,8 @@ thead.thead-dark th {
     color: #fff; /* Hover text color */
     border-color: #3498db; /* Hover border color */
 }
+
+.chart-container{
+    width: 100%; /* Adjust width as needed */
+    height: 400px; /* Fixed height */
+}

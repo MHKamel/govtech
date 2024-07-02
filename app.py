@@ -49,7 +49,7 @@ df = load_data()
 
 
 @app.route('/')
-def year_filter():
+def load_bar_chart():
     years = sorted(df['TIME_PERIOD'].unique().tolist(), reverse=True)
     na_items = ['Export', 'Import']
     return render_template('bar_chart.html', years=years, na_items=na_items)
@@ -64,7 +64,7 @@ def update_year_graph():
 
 # Routes
 @app.route('/country')
-def index():
+def load_line_chart():
     countries = df['geo'].unique()
     na_items = ['Export', 'Import']
     return render_template('line_chart.html', countries=countries, na_items=na_items, default_country=default_country)
@@ -143,7 +143,7 @@ def create_chart(df, na_items_selected, title, x_title, y_title, mode):
     return graphJSON
 
 @app.route('/country_detailed')
-def eu_countries_data():
+def load_pie_charts():
     countries = df['geo'].unique().tolist()
     years = sorted(df['TIME_PERIOD'].unique().tolist(), reverse=True)
     return render_template('pie_charts.html', countries=countries, years=years, default_country=default_country)
@@ -178,7 +178,7 @@ def update_pie_charts():
     return jsonify(pieTracesJSON=pie_traces)
 
 @app.route('/country_combined')
-def country_combined():
+def load_combined_pie_charts():
     countries = df['geo'].unique().tolist()
     return render_template('combined_pie_charts.html', countries=countries, default_country=default_country)
 

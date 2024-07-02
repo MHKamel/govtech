@@ -14,6 +14,11 @@
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 <body>
+    <nav id="top-links" class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            {% include 'navbar.html' %}
+        </div>
+    </nav>
     <div class="container">
         <h1 class="mt-5 text-center">Import and Export progress over time</h1>
         <br/>
@@ -29,14 +34,20 @@
         </div>
 
         <!-- Container for the Plotly chart -->
-        <div class="mb-4" id="plot"></div>
+        <div class="mb-4 chart-container" id="plot"></div>
         <h1 class="mt-5 text-center">Import and Export progress comparison</h1>
         <br/>
         <!-- Container for the table -->
         <div class="table-responsive">
-            <div id="table-container"></div>
+            <div id="table-container" class="chart-container"></div>
         </div>
     </div>
+
+    <footer id="bottom-links" class="footer mt-auto py-3 bg-dark">
+        <div class="container text-center">
+            <a class="navbar-brand" href="#"><img src="{{ url_for('static', filename='favicon.png') }}" width="50" height="50"></a>
+        </div>
+    </footer>
 
     <script>
         // Function to update the graph based on the selected country and NA items
