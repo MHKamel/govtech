@@ -103,8 +103,8 @@
 
         // Attach click event listener to country buttons
         $(document).ready(function() {
-            var na_items = JSON.parse('{{ na_items | tojson | safe }}');  // Parse NA items from Flask
-            var defaultCountry = '{{ default_country }}';  // Get default country from Flask
+            var na_items = JSON.parse('{{ na_items | tojson | safe }}');  
+            var defaultCountry = '{{ default_country }}'; 
 
             // Function to handle country button clicks
             $('.custom-button').click(function() {
